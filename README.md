@@ -1,11 +1,14 @@
 # Globus-Catalog-Ingestor
 
 ## OBTAIN GLOBUS CREDENTIALS
-https://www.globus.org/SignUp
+* https://www.globus.org/SignUp
+* You will input this once when you first run this script
+
 
 
 ## INSTALL REQUIREMENTS
-###Install Globus Catalog-client (https://github.com/globusonline/catalog-client)
+###Install Globus Catalog-client 
+Details at (https://github.com/globusonline/catalog-client)
 
 ```
 git clone https://github.com/globusonline/catalog-client
