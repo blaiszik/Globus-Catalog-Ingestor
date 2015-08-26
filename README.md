@@ -32,8 +32,6 @@ cd Globus-Catalog-Ingestor
 
 
 Example config.json
-
-
 ```json
 {
     "catalog_id" : 137,
@@ -48,7 +46,7 @@ Example config.json
 }
 ```
 
-* and metadata_map.json
+* Edit metadata_map.json (optional)
 
 ### Command line options
 ```
@@ -59,7 +57,14 @@ Example config.json
 
 # Examples
 
+## Using config.json (as above example)
+```sh
+python ingest.py
 ```
+
+## Overriding config.json
+Point the ingestor at a catalog and a file for ingesting
+```sh
 python ingest.py -c 'replace with catalog_name or ID' -f 'filename.hdf'
 ```
 
