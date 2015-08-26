@@ -104,6 +104,78 @@ def visit_hdf(hdf_file):
     hdf_file.visititems(func)
     return dataset_list
 
+def ingest_as_members(hdf_file, dataset_id):
+ # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
+    global client, catalog_id, config
+    hdf_datasets = {}  
+    annotation_to_add_values = {}
+    annotation_to_add_types = {} 
+
+    dataset_names = visit_hdf(hdf_file)
+    add_users(catalog_id, dataset_id)
+
+    for name in dataset_names:
+        data_string = str(f[name][()]).replace('[', '').replace(']', '')
+        hdf_datasets[name] = {'tag':str(f[name][()]).replace('[', '').replace(']', '')}
+
+        if name in metadata_map:
+            print_d("Mapping to metadata file")
+            print_d(type(metadata_map))
+            print_d(metadata_map.keys())
+            print_d(metadata_map)
+            hdf_datasets[name]['tag_short'] = metadata_map[name]
+        else:
+            tmp = str(f[name].name).split('/')
+            if (len(tmp) > 1):
+                hdf_datasets[name]['tag_short'] = "%s_%s"%(tmp[len(tmp)-2], tmp[len(tmp)-1])
+            else:
+                hdf_datasets[name]['tag_short'] = str(f[name].name)[str(f[name].name).rfind('/') + 1:]
+           
+        hdf_datasets[name]['tag'] = str(f[name][()]).replace('[', '').replace(']', '')
+        hdf_datasets[name]['type'] = get_catalog_type(f[name].dtype)
+        hdf_datasets[name]['shape'] = f[name].shape
+
+    for dataset in hdf_datasets:
+        tmp_annotation = {}
+        if hdf_datasets[dataset]['shape'] == (1,1) or hdf_datasets[dataset]['shape'] == ():
+            tmp_annotation = {'tag':hdf_datasets[dataset]['tag'], 'tag_name':hdf_datasets[dataset]['tag_short']}
+            annotation_to_add_values[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['tag']
+            annotation_to_add_types[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['type']
+
+    annotation_diff = check_annotations(annotation_to_add_values.keys())
+    print_d(annotation_diff)
+
+    #Create necessary annotations (multi call) - only required once
+    for annotation in annotation_diff:
+        print_d("Added annotation "+annotation)
+        response = client.create_annotation_def \
+                (catalog_id=catalog_id, annotation_name=annotation,
+                 value_type=annotation_to_add_types[annotation],   multivalued=False)
+    print_d("Finished adding annotations")
+
+
+    data_uri = "%s/%s/%s"%(config['endpoint'], config['path'],hdf_file.filename)
+    new_member = {"data_type":"file", "data_uri":data_uri}
+    #Create a member
+    response = client.create_members(catalog_id,dataset_id,new_member)
+    member_id = response.body['id']
+    print_d(response)
+
+    #Add annotations (bulk insert)
+    response = client.add_member_annotations \
+                (catalog_id, dataset_id, member_id, annotation_to_add_values)
+    print_d("Added annotations in bulk")
+
+    if output:
+        print "====="
+        print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(hdf_file.filename, catalog_id, dataset_id, member_id)
+        print "====="
+
+    f.close()
+
+
+
+
 def ingest_as_datasets(hdf_file):
     # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
     global client, catalog_id
@@ -225,7 +297,7 @@ if __name__ == "__main__":
     # Ingest a list of files from config
     if type(cl_file) is list:
         for h5file in cl_file:
-            print "Ingesting %s"%(h5_file)
+            print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
             ingest_as_datasets(f)
     # Ingest a single file from command line input
