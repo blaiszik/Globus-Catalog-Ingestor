@@ -210,7 +210,13 @@ if __name__ == "__main__":
     if args.f:
         cl_file = args.f
     if args.c:
-        cl_catalog = args.c
+        if type(args.c) is int:
+            cl_catalog = args.c
+        else:
+            if args.c in config['catalog_aliases']:
+                cl_catalog = config['catalog_aliases'][args.c]
+            else:
+                raise ValueError('Catalog name not found in aliases - check config file')
     if args.x is not None:
         output = not args.x
         print output
@@ -219,6 +225,7 @@ if __name__ == "__main__":
     # Ingest a list of files from config
     if type(cl_file) is list:
         for h5file in cl_file:
+            print "Ingesting %s"%(h5_file)
             f = h5py.File(h5file, 'r')
             ingest_as_datasets(f)
     # Ingest a single file from command line input
