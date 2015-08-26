@@ -256,12 +256,14 @@ if __name__ == "__main__":
     # Store authentication data in a local file
     debug = False
     output = True
+    ingest_into = "catalog"
 
     token_file = os.getenv('HOME','')+"/.ssh/gotoken.txt"
     wrap = CatalogWrapper(token_file=token_file)
     client = wrap.catalogClient
 
     catalog_id = config.get('catalog_id')
+    dataset_id = config.get('dataset_id')
     cl_file = config.get('files')
 
     """Import an input file and optional metadata file.
@@ -272,7 +274,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", metavar = "File", help = "The hdf5 file to push / output.", type=str)
     parser.add_argument("-c", metavar = "Catalog", help = "The ID of the catalog to push data into.", type=str)
-    parser.add_argument("-m", metavar = "Member", help = "Ingest data into a new dataset as members", type=str)
+    parser.add_argument("-d", metavar = "Dataset", help = "The ID of the dataset to push data into (optional)", type=str)
     parser.add_argument("-x", metavar = "Suppress", help = "Suppress output", type=bool)
 
 
@@ -289,6 +291,10 @@ if __name__ == "__main__":
                 cl_catalog = config['catalog_aliases'][args.c]
             else:
                 raise ValueError('Catalog name not found in aliases - check config file')
+    if args.d:
+        dataset_id = int(args.d)
+        ingest_into = "dataset"
+
     if args.x is not None:
         output = not args.x
         print output
@@ -299,7 +305,10 @@ if __name__ == "__main__":
         for h5file in cl_file:
             print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
-            ingest_as_datasets(f)
+            if ingest_into == "catalog":
+                ingest_as_datasets(f)
+            elif ingest_into == "dataset":
+                ingest_as_members(f, dataset_id)
     # Ingest a single file from command line input
     else:
         f = h5py.File(cl_file, 'r')
