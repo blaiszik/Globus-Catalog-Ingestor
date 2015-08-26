@@ -22,25 +22,27 @@ git clone https://github.com/blaiszik/Globus-Catalog-Ingestor.git
 cd Globus-Catalog-Ingestor
 ```
 * Edit config.json !! Do not commit this back to the git repo!!
-  * Input any required catalog aliases
-  * Create list of files to be ingested (can optionally be specified on the command line)
-  * Add login details if preferred 
-  * Input default catalog ID if preferred
-  * Add read and read_write privileges
-  * Specify data endpoint location
+  * "catalog_id": ID of the catalog you wish to push data into
+  * "catalog_aliases": If you prefer to work with a catalog by name, add the numeric aliases here
+  * "endpoint": Specify the endpoint location for your data
+  * "path": Specify the path to your data
+  * "files": Specify the location of the files ot parse (relative to the script)
+  * "rw_users": Indicate which users should be granted read and write privileges
+  * "r_users": Indicate which users should be granted read-only privileges
+
 
 Example config.json
+
+
 ```json
 {
-    "base_url" : "https://catalog-alpha.globuscs.info/service/dataset",
-    "endpoint" : "globus://s8idiuser#snow",
-    "username" : "",
-    "password" : "",
-    "token" : "/path/to/.ssh/token.txt-replace",
-    "files": ["B001_Eiger_silica150nm_water_test_Fq1_0001-20000.hdf"],
-    "path_prefix" : "",
     "catalog_id" : 137,
-    "catalog_aliases" : {"ingestor suresh":137},
+    "catalog_aliases" : { "ingestor suresh":137,
+                          "other catalog":15},
+    "endpoint" : "globus://s8idiuser#snow",
+    "path": "/path/to/data",
+    "files": ["B001_Eiger_silica150nm_water_test_Fq1_0001-20000.hdf",
+              "B001_Eiger_silica150nm_water_test_Fq1_0001-20001.hdf"],
     "rw_users" : ["s8idiuser", "sureshn", "blaiszik"],
     "r_users" : ["bfrosik", "blaiszik"]
 }
