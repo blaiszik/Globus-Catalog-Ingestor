@@ -21,7 +21,7 @@ python setup.py install --user
 git clone https://github.com/blaiszik/Globus-Catalog-Ingestor.git
 cd Globus-Catalog-Ingestor
 ```
-* Edit config.json !! Do not commit this back to the git repo!!
+* Edit config.json
   * "catalog_id": ID of the catalog you wish to push data into
   * "catalog_aliases": If you prefer to work with a catalog by name, add the numeric aliases here
   * "endpoint": Specify the endpoint location for your data
