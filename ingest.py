@@ -104,15 +104,12 @@ def visit_hdf(hdf_file):
     hdf_file.visititems(func)
     return dataset_list
 
-def ingest_as_members(hdf_file, dataset_id):
- # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
-    global client, catalog_id, config
-    hdf_datasets = {}  
-    annotation_to_add_values = {}
-    annotation_to_add_types = {} 
+def extract_hdf(f):
+    hdf_datasets = {}
+    values = {}
+    types = {}
 
-    dataset_names = visit_hdf(hdf_file)
-    add_users(catalog_id, dataset_id)
+    dataset_names = visit_hdf(f)
 
     for name in dataset_names:
         data_string = str(f[name][()]).replace('[', '').replace(']', '')
@@ -139,8 +136,21 @@ def ingest_as_members(hdf_file, dataset_id):
         tmp_annotation = {}
         if hdf_datasets[dataset]['shape'] == (1,1) or hdf_datasets[dataset]['shape'] == ():
             tmp_annotation = {'tag':hdf_datasets[dataset]['tag'], 'tag_name':hdf_datasets[dataset]['tag_short']}
-            annotation_to_add_values[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['tag']
-            annotation_to_add_types[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['type']
+            values[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['tag']
+            types[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['type']
+    return (values, types)
+
+def ingest_as_members(f, dataset_id):
+ # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
+    global client, catalog_id, config
+    hdf_datasets = {}  
+    annotation_to_add_values = {}
+    annotation_to_add_types = {} 
+
+    dataset_names = visit_hdf(f)
+    add_users(catalog_id, dataset_id)
+
+    annotation_to_add_values, annotation_to_add_types = extract_hdf(f)
 
     annotation_diff = check_annotations(annotation_to_add_values.keys())
     print_d(annotation_diff)
@@ -153,9 +163,9 @@ def ingest_as_members(hdf_file, dataset_id):
                  value_type=annotation_to_add_types[annotation],   multivalued=False)
     print_d("Finished adding annotations")
 
-
-    data_uri = "%s/%s/%s"%(config['endpoint'], config['path'],hdf_file.filename)
+    data_uri = "%s/%s/%s"%(config['endpoint'], config['path'],f.filename)
     new_member = {"data_type":"file", "data_uri":data_uri}
+    
     #Create a member
     response = client.create_members(catalog_id,dataset_id,new_member)
     member_id = response.body['id']
@@ -168,24 +178,20 @@ def ingest_as_members(hdf_file, dataset_id):
 
     if output:
         print "====="
-        print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(hdf_file.filename, catalog_id, dataset_id, member_id)
+        print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(f.filename, catalog_id, dataset_id, member_id)
         print "====="
-
     f.close()
 
 
-
-
-def ingest_as_datasets(hdf_file):
+def ingest_as_datasets(f):
     # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
     global client, catalog_id
     hdf_datasets = {}  
     annotation_to_add_values = {}
     annotation_to_add_types = {} 
 
-    dataset_names = visit_hdf(hdf_file)
     #print dataset_names
-    new_dataset = {"name":hdf_file.filename}
+    new_dataset = {"name":f.filename}
 
     #Create the dataset
     response = client.create_dataset(catalog_id, new_dataset)
@@ -194,33 +200,7 @@ def ingest_as_datasets(hdf_file):
     add_users(catalog_id, dataset_id)
     #print new_dataset
 
-    for name in dataset_names:
-        data_string = str(f[name][()]).replace('[', '').replace(']', '')
-        hdf_datasets[name] = {'tag':str(f[name][()]).replace('[', '').replace(']', '')}
-
-        if name in metadata_map:
-            print_d("Mapping to metadata file")
-            print_d(type(metadata_map))
-            print_d(metadata_map.keys())
-            print_d(metadata_map)
-            hdf_datasets[name]['tag_short'] = metadata_map[name]
-        else:
-            tmp = str(f[name].name).split('/')
-            if (len(tmp) > 1):
-                hdf_datasets[name]['tag_short'] = "%s_%s"%(tmp[len(tmp)-2], tmp[len(tmp)-1])
-            else:
-                hdf_datasets[name]['tag_short'] = str(f[name].name)[str(f[name].name).rfind('/') + 1:]
-           
-        hdf_datasets[name]['tag'] = str(f[name][()]).replace('[', '').replace(']', '')
-        hdf_datasets[name]['type'] = get_catalog_type(f[name].dtype)
-        hdf_datasets[name]['shape'] = f[name].shape
-
-    for dataset in hdf_datasets:
-        tmp_annotation = {}
-        if hdf_datasets[dataset]['shape'] == (1,1) or hdf_datasets[dataset]['shape'] == ():
-            tmp_annotation = {'tag':hdf_datasets[dataset]['tag'], 'tag_name':hdf_datasets[dataset]['tag_short']}
-            annotation_to_add_values[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['tag']
-            annotation_to_add_types[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['type']
+    annotation_to_add_values, annotation_to_add_types = extract_hdf(f)
 
     annotation_diff = check_annotations(annotation_to_add_values.keys())
     print_d(annotation_diff)
@@ -240,11 +220,11 @@ def ingest_as_datasets(hdf_file):
     
     if output:
         print "====="
-        print "Successfully ingested from %s as datasets \n into (Catalog, Dataset) (%s, %s)"%(hdf_file.filename, catalog_id, dataset_id)
+        print "Successfully ingested from %s as datasets \n into (Catalog, Dataset) (%s, %s)"%(f.filename, catalog_id, dataset_id)
         print "====="
-
     f.close()
 
+# Define some helper functions
 def print_d(input):
     global debug
     if debug:
@@ -252,67 +232,70 @@ def print_d(input):
     else:
         pass
 
+def is_int(x):
+    try: 
+        int(x)
+        return True
+    except ValueError:
+        return False
+
 if __name__ == "__main__":
-    # Store authentication data in a local file
+    #Set some defaults
     debug = False
     output = True
     ingest_into = "catalog"
 
+    # Instatiate Globus Catalog client and handle authentication
     token_file = os.getenv('HOME','')+"/.ssh/gotoken.txt"
     wrap = CatalogWrapper(token_file=token_file)
     client = wrap.catalogClient
 
+    ## Read and set a variety of variables from the config file 
     catalog_id = config.get('catalog_id')
     dataset_id = config.get('dataset_id')
-    cl_file = config.get('files')
+    files = config.get('files')
 
-    """Import an input file and optional metadata file.
-    Initialize an object of type Ingestor to do this.
-    Print the datasets in both the input file and also in the metadata file.
-    See above for more detailed info and examples.
-    """
+    ## Command line argument parsing
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", metavar = "File", help = "The hdf5 file to push / output.", type=str)
     parser.add_argument("-c", metavar = "Catalog", help = "The ID of the catalog to push data into.", type=str)
     parser.add_argument("-d", metavar = "Dataset", help = "The ID of the dataset to push data into (optional)", type=str)
     parser.add_argument("-x", metavar = "Suppress", help = "Suppress output", type=bool)
-
-
-
     args = parser.parse_args()
-    
     if args.f:
-        cl_file = args.f
+        files = args.f
     if args.c:
-        if type(args.c) is int:
-            cl_catalog = args.c
+        if is_int(args.c):
+            catalog_id = int(args.c)
         else:
             if args.c in config['catalog_aliases']:
-                cl_catalog = config['catalog_aliases'][args.c]
+                catalog_id = config['catalog_aliases'][args.c]
             else:
                 raise ValueError('Catalog name not found in aliases - check config file')
     if args.d:
         dataset_id = int(args.d)
         ingest_into = "dataset"
-
     if args.x is not None:
         output = not args.x
         print output
     print_d(config)
 
-    # Ingest a list of files from config
-    if type(cl_file) is list:
-        for h5file in cl_file:
+    # Handle the ingest
+    if type(files) is list:
+        for h5file in files:
             print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
             if ingest_into == "catalog":
                 ingest_as_datasets(f)
-            elif ingest_into == "dataset":
+            elif ingest_into == "dataset" and dataset_id:
                 ingest_as_members(f, dataset_id)
     # Ingest a single file from command line input
     else:
-        f = h5py.File(cl_file, 'r')
-        ingest_as_datasets(f)
+        f = h5py.File(files, 'r')
+        if ingest_into == "catalog":
+            ingest_as_datasets(f)
+        elif ingest_into == "dataset" and dataset_id:
+            ingest_as_members(f, dataset_id)
 
 
 
