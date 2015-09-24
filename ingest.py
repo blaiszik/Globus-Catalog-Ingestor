@@ -1,17 +1,3 @@
-# DataFinder.py    
-# Copyright (c) 2013-2014, UChicago Argonne, LLC
-# See LICENSE file.
-"""
-    Pushes data to Globus Catalog using Ingestor class.
-    Reads from the commandline the following:
-        input file -- Required (no tag)
-        metadata file -- Optional text file (-x tag)
-        Catalog ID -- Required (no tag, either name or ID can be used)
-        Dataset ID -- Optional (-d tag, name or ID used, must be in config file, used only if pushing data as member annotations)
-
-    Gets some (or all) datasets and related attributes from an HDF5 file. Takes in an HDF5 file as input and an optional textfile containing individual metadata paths and custom tag names for pushing to the catalog or simply outputting to the terminal.
-
-"""
 import argparse
 import sys
 import h5py
@@ -26,8 +12,6 @@ from globusonline.catalog.client.catalog_wrapper import *
 
 config_file = "./config.json"
 metadata_map_file = "./metadata_map.json"
-config = {}
-metadata_map = {}
 
 #Load the basic configurations for the ingestor
 with open(config_file) as data_file:    
@@ -277,7 +261,6 @@ if __name__ == "__main__":
         ingest_into = "dataset"
     if args.x is not None:
         output = not args.x
-        print output
     print_d(config)
 
     # Handle the ingest
@@ -296,28 +279,3 @@ if __name__ == "__main__":
             ingest_as_datasets(f)
         elif ingest_into == "dataset" and dataset_id:
             ingest_as_members(f, dataset_id)
-
-
-
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
