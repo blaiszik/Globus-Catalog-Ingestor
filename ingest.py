@@ -131,10 +131,14 @@ def ingest_as_members(f, dataset_name):
     annotation_to_add_values = {}
     annotation_to_add_types = {} 
 
-    #Create the dataset and store the created ID
-    new_dataset = {"name":dataset_name}
-    response = client.create_dataset(catalog_id, new_dataset)
-    dataset_id = response.body['id']
+
+    if(is_int(dataset_name)):
+        dataset_id = int(dataset_name)
+    else:
+        #Create the dataset and store the created ID
+        new_dataset = {"name":dataset_name}
+        response = client.create_dataset(catalog_id, new_dataset)
+        dataset_id = response.body['id']
 
 
     dataset_names = visit_hdf(f)
@@ -167,9 +171,10 @@ def ingest_as_members(f, dataset_name):
     print_d("Added annotations in bulk")
 
     if output:
-        print "====="
-        print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(f.filename, catalog_id, dataset_id, member_id)
-        print "====="
+        print "%s,%s,%s"%(catalog_id,dataset_id,member_id)
+        # print "====="
+        # print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(f.filename, catalog_id, dataset_id, member_id)
+        # print "====="
     f.close()
 
 
@@ -209,9 +214,10 @@ def ingest_as_datasets(f):
     print_d("Added annotations in bulk")
     
     if output:
-        print "====="
-        print "Successfully ingested from %s as datasets \n into (Catalog, Dataset) (%s, %s)"%(f.filename, catalog_id, dataset_id)
-        print "====="
+        print "%s,%s"%(catalog_id,dataset_id)
+        # print "====="
+        # print "Successfully ingested from %s as datasets \n into (Catalog, Dataset) (%s, %s)"%(f.filename, catalog_id, dataset_id)
+        # print "====="
     f.close()
 
 # Define some helper functions
@@ -274,8 +280,8 @@ if __name__ == "__main__":
     # Handle the ingest
     if type(files) is list:
         for h5file in files:
-            if output:
-                print "Ingesting %s"%(h5file)
+            # if output:
+            #     print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
             if ingest_into == "catalog":
                 print_d("Ingesting as dataset")
