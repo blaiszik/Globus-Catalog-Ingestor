@@ -124,12 +124,18 @@ def extract_hdf(f):
             types[hdf_datasets[dataset]['tag_short']] = hdf_datasets[dataset]['type']
     return (values, types)
 
-def ingest_as_members(f, dataset_id):
+def ingest_as_members(f, dataset_name):
  # """Prepares the dataset to be pushed to the API when pushing the metadata as tags on a dataset."""
     global client, catalog_id, config
     hdf_datasets = {}  
     annotation_to_add_values = {}
     annotation_to_add_types = {} 
+
+    #Create the dataset and store the created ID
+    new_dataset = {"name":dataset_name}
+    response = client.create_dataset(catalog_id, new_dataset)
+    dataset_id = response.body['id']
+
 
     dataset_names = visit_hdf(f)
     add_users(catalog_id, dataset_id)
@@ -228,6 +234,7 @@ if __name__ == "__main__":
     debug = False
     output = True
     ingest_into = "catalog"
+    dataset_name = ""
 
     # Instatiate Globus Catalog client and handle authentication
     token_file = os.getenv('HOME','')+"/.ssh/gotoken.txt"
@@ -257,7 +264,8 @@ if __name__ == "__main__":
             else:
                 raise ValueError('Catalog name not found in aliases - check config file')
     if args.d:
-        dataset_id = int(args.d)
+        print_d('Args.d: '+str(args.d))
+        dataset_name = args.d
         ingest_into = "dataset"
     if args.x is not None:
         output = not args.x
@@ -269,13 +277,17 @@ if __name__ == "__main__":
             print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
             if ingest_into == "catalog":
+                print_d("Ingesting as dataset")
                 ingest_as_datasets(f)
-            elif ingest_into == "dataset" and dataset_id:
-                ingest_as_members(f, dataset_id)
+            elif ingest_into == "dataset" and dataset_name:
+                print_d("Ingesting as members")
+                ingest_as_members(f, dataset_name)
     # Ingest a single file from command line input
     else:
         f = h5py.File(files, 'r')
         if ingest_into == "catalog":
+            print_d("Ingesting as dataset")
             ingest_as_datasets(f)
-        elif ingest_into == "dataset" and dataset_id:
-            ingest_as_members(f, dataset_id)
+        elif ingest_into == "dataset" and dataset_name:
+            print_d("Ingesting as members")
+            ingest_as_members(f, dataset_name)
