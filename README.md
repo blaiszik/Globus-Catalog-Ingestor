@@ -51,6 +51,7 @@ Example config.json
 ### Command line options
 ```
 -c specify the catalog name (string) or ID (int) to ingest data into  (this overrrides config.json catalog_id entry)
+-d ingest data into a dataset as members
 -f specify a filename to be ingested (this overrrides config.json files entry)
 -x suppress script console output
 ```
@@ -67,6 +68,13 @@ Point the ingestor at a catalog and a file for ingesting
 ```sh
 python ingest.py -c 'replace with catalog_name or ID' -f 'filename.hdf'
 ```
+
+## Ingesting into a dataset as members
+This will ingest data into a newly created dataset of the specified dataset name
+```sh
+python ingest.py -c 'replace with catalog_name or ID' -d 'New Dataset Name' -f 'filename.hdf'
+```
+
 
 
 
