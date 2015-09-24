@@ -274,7 +274,8 @@ if __name__ == "__main__":
     # Handle the ingest
     if type(files) is list:
         for h5file in files:
-            print "Ingesting %s"%(h5file)
+            if output:
+                print "Ingesting %s"%(h5file)
             f = h5py.File(h5file, 'r')
             if ingest_into == "catalog":
                 print_d("Ingesting as dataset")
