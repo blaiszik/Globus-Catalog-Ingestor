@@ -257,7 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", metavar = "File", help = "The hdf5 file to push / output.", type=str)
     parser.add_argument("-c", metavar = "Catalog", help = "The ID of the catalog to push data into.", type=str)
     parser.add_argument("-d", metavar = "Dataset", help = "The ID of the dataset to push data into (optional)", type=str)
-    parser.add_argument("-x", metavar = "Suppress", help = "Suppress output", type=bool)
+    parser.add_argument("-x", nargs='?', const=True, metavar = "Suppress", help = "Suppress output", type=bool)
     args = parser.parse_args()
     if args.f:
         files = args.f
@@ -274,8 +274,8 @@ if __name__ == "__main__":
         dataset_name = args.d
         ingest_into = "dataset"
     if args.x is not None:
+        print_d('Supressing output with -x argument')
         output = not args.x
-    print_d(config)
 
     # Handle the ingest
     if type(files) is list:
