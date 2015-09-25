@@ -139,6 +139,7 @@ def ingest_as_members(f, dataset_name):
         new_dataset = {"name":dataset_name}
         response = client.create_dataset(catalog_id, new_dataset)
         dataset_id = response.body['id']
+        raise ValueError()
 
 
     dataset_names = visit_hdf(f)
@@ -160,21 +161,26 @@ def ingest_as_members(f, dataset_name):
     data_uri = "%s/%s/%s"%(config['endpoint'], config['path'],f.filename)
     new_member = {"data_type":"file", "data_uri":data_uri}
     
-    #Create a member
-    response = client.create_members(catalog_id,dataset_id,new_member)
-    member_id = response.body['id']
-    print_d(response)
+    try:
+        #Create a member
+        response = client.create_members(catalog_id,dataset_id,new_member)
+        member_id = response.body['id']
+        print_d(response)
 
-    #Add annotations (bulk insert)
-    response = client.add_member_annotations \
-                (catalog_id, dataset_id, member_id, annotation_to_add_values)
-    print_d("Added annotations in bulk")
+        #Add annotations (bulk insert)
+        response = client.add_member_annotations \
+                    (catalog_id, dataset_id, member_id, annotation_to_add_values)
+        print_d("Added annotations in bulk")
 
-    if output:
-        print "%s,%s,%s"%(catalog_id,dataset_id,member_id)
-        # print "====="
-        # print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(f.filename, catalog_id, dataset_id, member_id)
-        # print "====="
+
+        if output:
+            print "%s,%s,%s"%(catalog_id,dataset_id,member_id)
+            # print "====="
+            # print "Successfully ingested from %s as members \n into (Catalog, Dataset, Member) (%s, %s, %s)"%(f.filename, catalog_id, dataset_id, member_id)
+            # print "====="
+    except RestClientError, e:
+        if output:
+            print "Conflict with existing member in catalog %s, dataset %s"%(catalog_id, dataset_id)
     f.close()
 
 
