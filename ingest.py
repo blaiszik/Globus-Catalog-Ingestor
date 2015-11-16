@@ -139,7 +139,7 @@ def ingest_as_members(f, dataset_name):
         new_dataset = {"name":dataset_name}
         response = client.create_dataset(catalog_id, new_dataset)
         dataset_id = response.body['id']
-        raise ValueError()
+        #raise ValueError()
 
 
     dataset_names = visit_hdf(f)
